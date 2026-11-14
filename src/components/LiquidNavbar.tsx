@@ -20,6 +20,8 @@ export type LiquidNavItem = {
   icon?: React.ReactNode
   /** the little scene the icon plays when tapped */
   fx?: NimbusFx
+  /** optional click handler for custom actions */
+  onClick?: (index: number, item: LiquidNavItem) => void
 }
 
 export type LiquidNavbarProps = {
