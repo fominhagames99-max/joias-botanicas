@@ -22,7 +22,7 @@ const VIDEO_URL =
   'https://private-us-east-1.manuscdn.com/user_upload_by_module/session_file/310519663228113460/mslsqRNFsqjxAQWo.mp4?Expires=1824199139&Signature=fRRlYj75St6iBracVEJ4pB9MZnokV7uFMMip~CVzrd00suXstcyRbb4pJ6PLwHRaSj9We8lO~YAk0dOseOhvcuLWkET1E93XgVXbJhqZ~m2rDzT~XhneeM8AtkYtNCYWcXZw5B1zJtTG~QQl6xTB4c8ZcGxftrcG-zfDUKsg5OhL~DO1YAJCTgxDuWAhBfg3Drdnc0bvcVWUnk1gTomzEJxLWMH~GLMWoV96JqyHuLiNdr4goOce0ShmgYI-LWoUz2fhzFyuBQCaUz~MPoWc-d-SzjPnCPW9ANMbDyS1Q1huaoM5N8pbPdgRQsMyqLR4x1iPHxuWLtY7Mmf4ntgKCA__&Key-Pair-Id=K10M74EMLURLMC'
 
 const whatsappUrl = 'https://wa.me/5512988850145'
-const ADMIN_PASSWORD = 'joiasbotanicas@@'
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'joiasbotanicas@@'
 const STORAGE_KEY = 'joias_botanicas_products'
 
 const defaultPieces = [
