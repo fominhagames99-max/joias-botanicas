@@ -217,7 +217,8 @@ export default function App() {
         setProducts([...products, newPiece])
       }
     } catch (err) {
-      setAdminError('Erro ao salvar produto')
+      setAdminError('Erro ao salvar produto: ' + (err instanceof Error ? err.message : 'desconhecido'))
+      alert('Erro ao salvar: ' + (err instanceof Error ? err.message : 'verifique o console'))
     }
     setSaving(false)
     resetForm()
@@ -229,7 +230,8 @@ export default function App() {
         await removeProduct(id)
         setProducts(products.filter((p) => p.id !== id))
       } catch (err) {
-        setAdminError('Erro ao remover produto')
+        setAdminError('Erro ao remover: ' + (err instanceof Error ? err.message : 'desconhecido'))
+        alert('Erro ao remover: ' + (err instanceof Error ? err.message : 'verifique o console'))
       }
     }
   }
@@ -577,7 +579,7 @@ export default function App() {
           </h1>
 
           {/* Subheading */}
-          <p className="text-base sm:text-lg md:text-xl text-[#5b5163] mb-6 sm:mb-8 max-w-2xl mx-auto px-2 animate-fade-in-up" style={{ animationDelay: '0.4s', opacity: 0 }}>
+          <p className="text-base sm:text-lg md:text-xl text-[#ffffff] font-semibold mb-6 sm:mb-8 max-w-2xl mx-auto px-2 animate-fade-in-up" style={{ animationDelay: '0.4s', opacity: 0, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
             Joias feitas à mão com flores e folhas reais, preservadas em resina. Cada peça é única, assim como quem a usa.
           </p>
 
