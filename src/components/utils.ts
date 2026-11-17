@@ -1,4 +1,5 @@
-import type { DishTier } from "./types";
+import type { ConveyorDish } from "./types";
+// import type { DishTier } from "./types";
 
 const SPACING = 1.35;
 const CURVE = 0.95;
@@ -7,13 +8,13 @@ const TILT = 0.8;
 const SLAT = 0.34;
 const LIFT_Y = -6;
 const LIFT_SCALE = 0.08;
-const BACK_SHADE = 0.15;
+// const BACK_SHADE = 0.15;
 const CHIP_ROOM = 34;
-const WIDE = 1024;
-const HOLD = 1400;
-const RUN = 0;
-const SEEK = 1;
-const DRAG = 2;
+// const WIDE = 1024;
+// const HOLD = 1400;
+// const RUN = 0;
+// const SEEK = 1;
+// const DRAG = 2;
 
 const TIERS = [
   { ring: "border-chart-1", dot: "bg-chart-1" },
@@ -97,7 +98,7 @@ export function makeSim(): Sim {
   return {
     offset: 0,
     v: 0,
-    mode: RUN,
+    mode: 0,
     target: 0,
     lift: [],
     vlift: [],

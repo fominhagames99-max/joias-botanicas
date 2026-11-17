@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  Leaf,
   MessagesSquare,
   ArrowRight,
   Lock,
@@ -16,14 +15,31 @@ import {
   User,
 } from 'lucide-react'
 import { LiquidNavbar } from './components/LiquidNavbar'
+import type { LiquidNavItem, NimbusFx } from './components/LiquidNavbar'
+import logoDaMata from '../logo-da-mata.png'
 import './App.css'
+import { initializeApp } from 'firebase/app'
+import { getFirestore, collection, query, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore'
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD_oB6qWhOH2u4xUS9mnRV4LVRMLGE3pAE",
+  authDomain: "da-mata-db52a.firebaseapp.com",
+  projectId: "da-mata-db52a",
+  storageBucket: "da-mata-db52a.firebasestorage.app",
+  messagingSenderId: "764978468119",
+  appId: "1:764978468119:web:71356972f996b2f7f29352",
+  measurementId: "G-VN1SWNZD51"
+}
+
+const app = initializeApp(firebaseConfig)
+const db = getFirestore(app)
+const productsRef = collection(db, 'products')
 
 const VIDEO_URL =
   'https://private-us-east-1.manuscdn.com/user_upload_by_module/session_file/310519663228113460/mslsqRNFsqjxAQWo.mp4?Expires=1824199139&Signature=fRRlYj75St6iBracVEJ4pB9MZnokV7uFMMip~CVzrd00suXstcyRbb4pJ6PLwHRaSj9We8lO~YAk0dOseOhvcuLWkET1E93XgVXbJhqZ~m2rDzT~XhneeM8AtkYtNCYWcXZw5B1zJtTG~QQl6xTB4c8ZcGxftrcG-zfDUKsg5OhL~DO1YAJCTgxDuWAhBfg3Drdnc0bvcVWUnk1gTomzEJxLWMH~GLMWoV96JqyHuLiNdr4goOce0ShmgYI-LWoUz2fhzFyuBQCaUz~MPoWc-d-SzjPnCPW9ANMbDyS1Q1huaoM5N8pbPdgRQsMyqLR4x1iPHxuWLtY7Mmf4ntgKCA__&Key-Pair-Id=K10M74EMLURLMC'
 
 const whatsappUrl = 'https://wa.me/5512988850145'
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'joiasbotanicas@@'
-const STORAGE_KEY = 'joias_botanicas_products'
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'damata@@'
 
 const defaultPieces = [
   {
@@ -96,26 +112,33 @@ export default function App() {
   const [activeSection, setActiveSection] = useState(0) // 0=Início, 1=Portfólio, 2=Sobre, 3=Contato
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Carrega produtos do localStorage ou usa defaults
+  // Carrega produtos do Firestore
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        setProducts(JSON.parse(raw))
-      } else {
-        setProducts(defaultPieces)
-      }
-    } catch {
-      setProducts(defaultPieces)
-    }
+    const q = query(productsRef)
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Piece))
+      setProducts(data.length > 0 ? data : defaultPieces)
+    })
+    return () => unsubscribe()
   }, [])
 
-  // Persiste sempre que produtos mudam
-  useEffect(() => {
-    if (products.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(products))
+  // Persiste produto individual no Firestore
+  const persistProduct = async (piece: Piece, isNew: boolean) => {
+    const { id, ...rest } = piece
+    if (isNew) {
+      await addDoc(productsRef, rest)
+    } else if (id) {
+      await updateDoc(doc(db, 'products', id), rest)
     }
-  }, [products])
+  }
+
+  // Remove produto do Firestore
+  const removeProduct = async (id: string) => {
+    await deleteDoc(doc(db, 'products', id))
+  }
 
   const categories = Array.from(new Set(products.map((p) => p.category))).sort()
 
@@ -160,9 +183,9 @@ export default function App() {
     setForm({ name: '', category: '', price: '', description: '', color: '#8a5a8c', image: '' })
   }
 
-  const startAdd = () => {
-    resetForm()
-  }
+// const startAdd = () => {
+//   resetForm()
+// }
 
   const startEdit = (piece: Piece) => {
     setEditing(piece)
@@ -177,7 +200,6 @@ export default function App() {
     }
     setSaving(true)
     setAdminError('')
-    await new Promise((r) => setTimeout(r, 400))
     const newPiece: Piece = {
       id: editing?.id || `prod-${Date.now()}`,
       name: form.name,
@@ -187,18 +209,28 @@ export default function App() {
       color: form.color || '#8a5a8c',
       image: form.image || '',
     }
-    if (editing) {
-      setProducts(products.map((p) => (p.id === editing.id ? newPiece : p)))
-    } else {
-      setProducts([...products, newPiece])
+    try {
+      await persistProduct(newPiece, !editing)
+      if (editing) {
+        setProducts(products.map((p) => (p.id === editing.id ? newPiece : p)))
+      } else {
+        setProducts([...products, newPiece])
+      }
+    } catch (err) {
+      setAdminError('Erro ao salvar produto')
     }
     setSaving(false)
     resetForm()
   }
 
-  const deleteProduct = (id: string) => {
+  const deleteProduct = async (id: string) => {
     if (window.confirm('Tem certeza que deseja remover este produto?')) {
-      setProducts(products.filter((p) => p.id !== id))
+      try {
+        await removeProduct(id)
+        setProducts(products.filter((p) => p.id !== id))
+      } catch (err) {
+        setAdminError('Erro ao remover produto')
+      }
     }
   }
 
@@ -233,13 +265,13 @@ export default function App() {
     return () => observer.disconnect()
   }, [])
 
-  const navItems = [
-    { label: "Início", href: "#inicio", icon: <Home className="w-5 h-5" />, fx: "glow" },
-    { label: "Portfólio", href: "#portfolio", icon: <Globe className="w-5 h-5" />, fx: "drop" },
-    { label: "Sobre", href: "#sobre", icon: <Plane className="w-5 h-5" />, fx: "spin" },
-    { label: "Contato", href: "#contato", fx: "wave" },
-    { label: "WhatsApp", href: whatsappUrl, icon: <MessagesSquare className="w-5 h-5" />, fx: "glow" },
-    { label: "Admin", onClick: () => setAdminMode(true), icon: <User className="w-5 h-5" />, fx: "pop" },
+  const navItems: LiquidNavItem[] = [
+    { label: "Início", href: "#inicio", icon: <Home className="w-5 h-5" />, fx: "glow" as NimbusFx },
+    { label: "Portfólio", href: "#portfolio", icon: <Globe className="w-5 h-5" />, fx: "drop" as NimbusFx },
+    { label: "Sobre", href: "#sobre", icon: <Plane className="w-5 h-5" />, fx: "spin" as NimbusFx },
+    { label: "Contato", href: "#contato", fx: "wave" as NimbusFx },
+    { label: "WhatsApp", href: whatsappUrl, icon: <MessagesSquare className="w-5 h-5" />, fx: "glow" as NimbusFx },
+    { label: "Admin", onClick: () => setAdminMode(true), icon: <User className="w-5 h-5" />, fx: "pop" as NimbusFx },
   ]
 
   return (
@@ -270,6 +302,13 @@ export default function App() {
                 className="w-full bg-[#2a1f33] text-[#faf7f2] py-3 rounded-lg font-medium hover:bg-[#3b2d47] transition-colors"
               >
                 Entrar
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full mt-3 bg-[#f1e9de] text-[#5b5163] py-3 rounded-lg font-medium hover:bg-[#e9dccf] transition-colors"
+              >
+                Sair
               </button>
             </form>
           </div>
@@ -514,10 +553,9 @@ export default function App() {
         <div className="absolute bottom-0 left-0 right-0 h-[240px] bg-gradient-to-t from-[rgba(31,26,36,0.35)] to-transparent pointer-events-none z-10" />
 
         {/* Navbar — fixa no topo, sempre visível ao descer a página */}
-        <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4 flex items-center justify-between gap-4 sm:gap-0 animate-fade-in-up" style={{ animationDelay: '0.1s', opacity: 0 }}>
-          <div className="flex items-center gap-2">
-            <Leaf className="w-5 h-5 text-[#1f1a24]" />
-            <span className="text-lg font-semibold tracking-tight text-[#1f1a24]">Joias Botânicas</span>
+        <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4 flex items-center justify-center gap-4 sm:gap-0 animate-fade-in-up" style={{ animationDelay: '0.1s', opacity: 0 }}>
+          <div className="flex items-center justify-center">
+            <img src={logoDaMata} alt="da mata" className="h-10 sm:h-12 w-auto" />
           </div>
           <LiquidNavbar
             tone="light"
@@ -532,7 +570,7 @@ export default function App() {
         <main className="relative z-20 px-4 sm:px-6 pt-[120px] sm:pt-[200px] pb-16 sm:pb-32 max-w-7xl mx-auto text-center flex flex-col items-center justify-center min-h-[calc(100dvh-200px)]">
           {/* Heading — frase de efeito */}
           <h1 className="text-[38px] sm:text-6xl md:text-7xl lg:text-[84px] font-bold leading-[1.04] tracking-[-0.035em] text-[#1f1a24] mb-4 sm:mb-5 animate-fade-in-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
-            Joias Botânicas<br />
+            <img src={logoDaMata} alt="da mata" className="h-24 sm:h-32 w-auto mb-2 sm:mb-4 mx-auto" />
             <span className="text-[#1f1a24] font-bold animate-gradient-drift">
               Peças únicas que nascem da natureza
             </span>
@@ -620,7 +658,7 @@ export default function App() {
       <section id="sobre" className="py-20 sm:py-32 px-4 sm:px-6 bg-[#faf7f2]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16 sm:mb-20">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.02em] text-[#1f1a24] mb-3">Sobre a Joias Botânicas</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.02em] text-[#1f1a24] mb-3">Sobre a da mata</h2>
             <p className="text-[#5b5163] text-base sm:text-lg max-w-2xl mx-auto">
               Joias feitas à mão com flores e folhas reais, preservadas em resina. Cada peça é única, assim como quem a usa. Trabalhamos com carinho e dedicação para entregar joias que carregam a essência da natureza.
             </p>
@@ -662,7 +700,7 @@ export default function App() {
               Falar pelo WhatsApp
             </a>
             <p className="mt-6 text-center text-[#5b5163] text-sm">
-              Atendimento por WhatsApp • Joias Botânicas
+              Atendimento por WhatsApp • da mata
             </p>
           </div>
         </div>
@@ -671,7 +709,7 @@ export default function App() {
       {/* Rodapé simples */}
       <footer className="border-t border-[#e6dccf] bg-white/80 py-8 sm:py-12 text-center">
         <p className="text-[#5b5163] text-sm sm:text-base">
-          Joias Botânicas — Feito à mão com flores e folhas reais{' '}
+          da mata — Feito à mão com flores e folhas reais{' '}
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-[#1f1a24] font-medium hover:underline">
             Fale pelo WhatsApp
           </a>

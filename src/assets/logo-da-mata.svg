@@ -1,0 +1,31 @@
+<svg width="260" height="140" viewBox="0 0 260 140" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .main { font-family: 'Instrument Serif', serif; font-size: 56px; font-style: italic; fill: #1f1a24; letter-spacing: -2px; }
+      .sub { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 3px; fill: #1f1a24; text-transform: uppercase; }
+    </style>
+  </defs>
+
+  <!-- Flor principal -->
+  <path d="M108 42 Q100 30 95 40 Q90 50 98 58 Q106 66 118 58 Q126 50 121 40 Q116 30 108 42 Z" fill="none" stroke="#1f1a24" stroke-width="1.5"/>
+  <path d="M108 48 Q100 40 98 48 Q96 56 108 64 Q120 56 118 48 Q116 40 108 48 Z" fill="none" stroke="#1f1a24" stroke-width="1.5"/>
+  <circle cx="108" cy="52" r="3" fill="#1f1a24"/>
+
+  <!-- Flor menor -->
+  <path d="M90 52 Q85 46 88 52 Q90 58 96 54 Q100 52 98 50 Q95 48 90 52 Z" fill="none" stroke="#1f1a24" stroke-width="1.5"/>
+
+  <!-- Linha decorativa esquerda -->
+  <path d="M10 60 Q0 66 10 72 Q20 78 32 72" fill="none" stroke="#1f1a24" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Linha decorativa direita -->
+  <path d="M230 60 Q240 66 230 72 Q220 78 210 72" fill="none" stroke="#1f1a24" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Linha superior flor -->
+  <path d="M80 30 Q90 20 100 30 Q110 40 120 30" fill="none" stroke="#1f1a24" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Texto principal -->
+  <text x="15" y="80" class="main">da mata</text>
+
+  <!-- Texto secundário -->
+  <text x="75" y="108" class="sub">JOIAS BOTÂNICAS</text>
+</svg>
