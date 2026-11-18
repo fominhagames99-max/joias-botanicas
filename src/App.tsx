@@ -687,18 +687,18 @@ Obrigada! 💚`
             active={activeSection}
             items={navItems}
           />
-          {cart.length > 0 && (
-            <button
-              onClick={() => setCartOpen(true)}
-              className="fixed bottom-8 right-8 z-50 bg-[#2a1f33] text-[#faf7f2] w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-[#3b2d47] transition-colors animate-bounce"
-              title="Carrinho"
-            >
-              <ShoppingCart className="w-7 h-7" />
+          <button
+            onClick={() => setCartOpen(true)}
+            className="fixed bottom-24 right-8 z-50 bg-[#2a1f33] text-[#faf7f2] w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-[#3b2d47] transition-colors animate-bounce"
+            title="Carrinho"
+          >
+            <ShoppingCart className="w-7 h-7" />
+            {cart.length > 0 && (
               <span className="absolute top-1 right-1 w-3 h-3 bg-[#c98f7a] rounded-full text-[10px] font-bold text-white flex items-center justify-center">
                 {cart.length}
               </span>
-            </button>
-          )}
+            )}
+          </button>
         </nav>
 
         {/* Hero content */}
