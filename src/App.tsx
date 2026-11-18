@@ -13,6 +13,7 @@ import {
   Globe,
   Plane,
   User,
+  ShoppingCart,
 } from 'lucide-react'
 import { LiquidNavbar } from './components/LiquidNavbar'
 import type { LiquidNavItem, NimbusFx } from './components/LiquidNavbar'
@@ -112,6 +113,75 @@ const [adminSuccess, setAdminSuccess] = useState('')
   const [saving, setSaving] = useState(false)
   const [activeSection, setActiveSection] = useState(0) // 0=Início, 1=Portfólio, 2=Sobre, 3=Contato
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Carrinho de compras
+  interface CartItem {
+    piece: Piece
+    quantity: number
+  }
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [cartOpen, setCartOpen] = useState(false)
+
+  const parsePrice = (price: string): number => {
+    return parseFloat(price.replace('R$', '').replace('.', '').replace(',', '.').trim()) || 0
+  }
+
+  const formatPrice = (value: number): string => {
+    return value.toFixed(2).replace('.', ',')
+  }
+
+  const cartTotal = cart.reduce((sum, item) => sum + parsePrice(item.piece.price) * item.quantity, 0)
+
+  const addToCart = (piece: Piece) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.piece.id === piece.id)
+      if (existing) {
+        return prev.map(item =>
+          item.piece.id === piece.id ? { ...item, quantity: item.quantity + 1 } : item
+        )
+      }
+      return [...prev, { piece, quantity: 1 }]
+    })
+    setCartOpen(true)
+  }
+
+  const removeFromCart = (id: string) => {
+    setCart(prev => prev.filter(item => item.piece.id !== id))
+  }
+
+  const updateQuantity = (id: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(id)
+      return
+    }
+    setCart(prev => prev.map(item =>
+      item.piece.id === id ? { ...item, quantity } : item
+    ))
+  }
+
+  const generateWhatsAppMessage = (): string => {
+    if (cart.length === 0) return 'Seu carrinho está vazio.'
+
+    const itemsList = cart.map((item, index) => {
+      const price = parsePrice(item.piece.price)
+      const itemTotal = price * item.quantity
+      return `${index + 1}. ${item.piece.name} (${item.piece.category}) x${item.quantity} - R$ ${formatPrice(itemTotal)}`
+    }).join('\n')
+
+    const totalFormatted = formatPrice(cartTotal)
+
+    return `Olá! Tudo bem? 🌿
+
+Gostei da(s) seguinte(s) peça(s) da da mata:
+
+${itemsList}
+
+Valor total: R$ ${totalFormatted}
+
+Podemos confirmar a compra?
+
+Obrigada! 💚`
+  }
 
   // Carrega produtos do Firestore
   useEffect(() => {
@@ -617,6 +687,18 @@ const [adminSuccess, setAdminSuccess] = useState('')
             active={activeSection}
             items={navItems}
           />
+          {cart.length > 0 && (
+            <button
+              onClick={() => setCartOpen(true)}
+              className="fixed bottom-8 right-8 z-50 bg-[#2a1f33] text-[#faf7f2] w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-[#3b2d47] transition-colors animate-bounce"
+              title="Carrinho"
+            >
+              <ShoppingCart className="w-7 h-7" />
+              <span className="absolute top-1 right-1 w-3 h-3 bg-[#c98f7a] rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                {cart.length}
+              </span>
+            </button>
+          )}
         </nav>
 
         {/* Hero content */}
@@ -691,14 +773,24 @@ const [adminSuccess, setAdminSuccess] = useState('')
                   <p className="text-xs sm:text-sm text-[#5b5163] mb-1">{piece.category}</p>
                   <p className="text-sm sm:text-base font-medium text-[#1f1a24] mb-3">{piece.price}</p>
                   <p className="text-sm text-[#3d3444] mb-4 line-clamp-2">{piece.description}</p>
-                  <a
-                    href={`${whatsappUrl}?text=Ol%C3%A1%20Jorge!%20Tenho%20interesse%20na%20pe%C3%A7a%3A%20${encodeURIComponent(piece.name)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 bg-[#2a1f33] text-[#faf7f2] px-4 py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-[#3b2d47] transition-colors"
-                  >
-                    WhatsApp <ArrowRight className="w-3 h-3" />
-                  </a>
+                  <div className="flex gap-2 w-full">
+                    <button
+                      onClick={() => addToCart(piece)}
+                      className="flex-1 bg-[#1f1a24] text-[#faf7f2] px-4 py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-[#3b2d47] transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Carrinho
+                    </button>
+                    <a
+                      href={`${whatsappUrl}?text=Ol%C3%A1%20Jorge!%20Tenho%20interesse%20na%20pe%C3%A7a%3A%20${encodeURIComponent(piece.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-[#2a1f33] text-[#faf7f2] px-4 py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-[#3b2d47] transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <MessagesSquare className="w-3 h-3" />
+                      WhatsApp
+                    </a>
+                  </div>
                 </div>
               </div>
             ))}
@@ -768,6 +860,107 @@ const [adminSuccess, setAdminSuccess] = useState('')
           </a>
         </p>
       </footer>
+
+      {/* Modal do Carrinho */}
+      {cartOpen && (
+        <div className="fixed inset-0 z-[60] bg-[#1f1a24]/60 backdrop-blur-sm flex items-center justify-center" onClick={() => setCartOpen(false)}>
+          <div className="bg-[#faf7f2] rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden border border-[#e9e1d6] m-4" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-[#2a1f33] p-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#faf7f2] flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5" />
+                Seu Carrinho
+              </h2>
+              <button
+                onClick={() => setCartOpen(false)}
+                className="text-[#faf7f2]/70 hover:text-[#faf7f2] text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-4 max-h-[60vh]">
+              {cart.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-[#5b5163] text-sm">Seu carrinho está vazio.</p>
+                  <p className="text-[#5b5163] text-xs mt-2">Adicione peças do portfólio.</p>
+                </div>
+              ) : (
+                <>
+                  {cart.map((item) => (
+                    <div key={item.piece.id} className="flex gap-3 mb-4 items-center">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#8a5a8c]/10 flex items-center justify-center flex-shrink-0">
+                        {item.piece.image ? (
+                          <img src={item.piece.image} alt={item.piece.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-lg font-serif italic" style={{ color: item.piece.color }}>
+                            {item.piece.name.charAt(0)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[#1f1a24] text-sm truncate">{item.piece.name}</p>
+                        <p className="text-xs text-[#5b5163] truncate">{item.piece.category}</p>
+                        <p className="text-sm font-medium text-[#1f1a24]">{item.piece.price}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() => updateQuantity(item.piece.id, item.quantity - 1)}
+                            className="w-7 h-7 rounded border border-[#e9e1d6] bg-white text-[#5b5163] text-xs flex items-center justify-center hover:bg-[#f1e9de] transition-colors"
+                          >
+                            −
+                          </button>
+                          <span className="w-6 text-center text-xs font-medium text-[#1f1a24]">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.piece.id, item.quantity + 1)}
+                            className="w-7 h-7 rounded border border-[#e9e1d6] bg-white text-[#5b5163] text-xs flex items-center justify-center hover:bg-[#f1e9de] transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeFromCart(item.piece.id)}
+                        className="text-[#c98f7a] hover:text-[#c98f7a]/80"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <div className="border-t border-[#e6dccf] pt-4 mt-4">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-[#5b5163] text-sm">Subtotal:</span>
+                      <span className="font-medium text-[#1f1a24] text-sm">R$ {formatPrice(cartTotal)}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {cart.length > 0 && (
+              <div className="bg-[#2a1f33] p-4 flex gap-3">
+                <button
+                  onClick={() => {
+                    setCart([])
+                    setCartOpen(false)
+                  }}
+                  className="flex-1 bg-transparent border border-[#faf7f2]/30 text-[#faf7f2]/70 py-3 rounded-lg font-medium hover:bg-[#faf7f2]/10 transition-colors"
+                >
+                  Limpar
+                </button>
+                <a
+                  href={`${whatsappUrl}?text=${encodeURIComponent(generateWhatsAppMessage())}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 bg-[#128c7e] text-[#faf7f2] py-3 rounded-lg font-medium hover:bg-[#0d6e5d] transition-colors flex items-center justify-center gap-2"
+                >
+                  <MessagesSquare className="w-4 h-4" />
+                  Enviar pelo WhatsApp
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
