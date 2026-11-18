@@ -105,6 +105,7 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [adminPassword, setAdminPassword] = useState('')
   const [adminError, setAdminError] = useState('')
+const [adminSuccess, setAdminSuccess] = useState('')
   const [products, setProducts] = useState<Piece[]>([])
   const [editing, setEditing] = useState<Piece | null>(null)
   const [form, setForm] = useState<Partial<Piece>>({})
@@ -163,9 +164,11 @@ export default function App() {
     if (adminPassword === ADMIN_PASSWORD) {
       setIsAuthenticated(true)
       setAdminError('')
+      setAdminSuccess('')
       setAdminPassword('')
     } else {
       setAdminError('Senha incorreta')
+      setAdminSuccess('')
     }
   }
 
@@ -210,28 +213,41 @@ export default function App() {
       image: form.image || '',
     }
     try {
+      console.log('Tentando salvar produto:', newPiece)
       await persistProduct(newPiece, !editing)
+      console.log('Produto salvo com sucesso!')
+      setAdminSuccess('Produto lançado com sucesso!')
+      setAdminError('')
       if (editing) {
         setProducts(products.map((p) => (p.id === editing.id ? newPiece : p)))
       } else {
         setProducts([...products, newPiece])
       }
-    } catch (err) {
-      setAdminError('Erro ao salvar produto: ' + (err instanceof Error ? err.message : 'desconhecido'))
-      alert('Erro ao salvar: ' + (err instanceof Error ? err.message : 'verifique o console'))
+    } catch (err: any) {
+      console.error('Erro ao salvar:', err)
+      setAdminError('Erro ao salvar produto: ' + err.message)
+      setAdminSuccess('')
+      alert('Erro ao salvar: ' + err.message + '\nVerifique as regras do Firestore no Firebase Console.')
     }
     setSaving(false)
     resetForm()
+    setTimeout(() => setAdminSuccess(''), 4000)
   }
 
   const deleteProduct = async (id: string) => {
     if (window.confirm('Tem certeza que deseja remover este produto?')) {
       try {
+        console.log('Tentando remover produto ID:', id)
         await removeProduct(id)
+        console.log('Produto removido com sucesso!')
+        setAdminSuccess('Produto removido com sucesso!')
+        setAdminError('')
         setProducts(products.filter((p) => p.id !== id))
-      } catch (err) {
-        setAdminError('Erro ao remover: ' + (err instanceof Error ? err.message : 'desconhecido'))
-        alert('Erro ao remover: ' + (err instanceof Error ? err.message : 'verifique o console'))
+      } catch (err: any) {
+        console.error('Erro ao remover:', err)
+        setAdminError('Erro ao remover: ' + err.message)
+        setAdminSuccess('')
+        alert('Erro ao remover: ' + err.message + '\nVerifique as regras do Firestore no Firebase Console.')
       }
     }
   }
@@ -333,6 +349,32 @@ export default function App() {
                 <LogOut className="w-4 h-4" /> Sair
               </button>
             </div>
+
+            {/* Mensagem de sucesso (verde) */}
+            {adminSuccess && (
+              <div className="mb-4 p-4 bg-[#d1fae5] border border-[#10b981] rounded-xl text-[#065f46] text-sm font-medium flex items-center justify-between">
+                <span>{adminSuccess}</span>
+                <button
+                  onClick={() => setAdminSuccess('')}
+                  className="ml-4 text-[#065f46] hover:underline"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Mensagem de erro (vermelho) */}
+            {adminError && (
+              <div className="mb-4 p-4 bg-[#fee2e2] border border-[#ef4444] rounded-xl text-[#991b1b] text-sm font-medium flex items-center justify-between">
+                <span>{adminError}</span>
+                <button
+                  onClick={() => setAdminError('')}
+                  className="ml-4 text-[#991b1b] hover:underline"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             <div className="space-y-6">
               {/* Adicionar / editar produto */}
@@ -441,7 +483,7 @@ export default function App() {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="flex-1 bg-[#2a1f33] text-[#faf7f2] py-3 rounded-lg font-medium hover:bg-[#3b2d47] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="flex-1 flex items-center gap-2 justify-center bg-[#2a1f33] text-[#faf7f2] py-3 rounded-lg font-medium hover:bg-[#3b2d47] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {saving ? (
                         <>
