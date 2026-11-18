@@ -203,6 +203,7 @@ const [adminSuccess, setAdminSuccess] = useState('')
     }
     setSaving(true)
     setAdminError('')
+    setAdminSuccess('')
     const newPiece: Piece = {
       id: editing?.id || `prod-${Date.now()}`,
       name: form.name,
@@ -214,9 +215,12 @@ const [adminSuccess, setAdminSuccess] = useState('')
     }
     try {
       console.log('Tentando salvar produto:', newPiece)
-      await persistProduct(newPiece, !editing)
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Tempo esgotado ao salvar produto')), 10000)
+      )
+      await Promise.race([persistProduct(newPiece, !editing), timeout])
       console.log('Produto salvo com sucesso!')
-      setAdminSuccess('Produto lançado com sucesso!')
+      setAdminSuccess('Produto salvo com sucesso!')
       setAdminError('')
       if (editing) {
         setProducts(products.map((p) => (p.id === editing.id ? newPiece : p)))
@@ -228,8 +232,9 @@ const [adminSuccess, setAdminSuccess] = useState('')
       setAdminError('Erro ao salvar produto: ' + err.message)
       setAdminSuccess('')
       alert('Erro ao salvar: ' + err.message + '\nVerifique as regras do Firestore no Firebase Console.')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
     resetForm()
     setTimeout(() => setAdminSuccess(''), 4000)
   }
