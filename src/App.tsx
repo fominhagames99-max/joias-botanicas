@@ -689,7 +689,7 @@ Obrigada! 💚`
           />
           <button
             onClick={() => setCartOpen(true)}
-            className="fixed bottom-24 right-8 z-50 bg-[#2a1f33] text-[#faf7f2] w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-[#3b2d47] transition-colors animate-bounce"
+            className="fixed top-6 left-6 z-50 bg-[#2a1f33] text-[#faf7f2] w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-[#3b2d47] transition-colors animate-bounce"
             title="Carrinho"
           >
             <ShoppingCart className="w-7 h-7" />
