@@ -195,6 +195,13 @@ const [adminSuccess, setAdminSuccess] = useState('')
     setForm({ ...piece })
   }
 
+  function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Tempo esgotado — verifique sua conexão e as regras do Firestore')), ms)
+    )
+    return Promise.race([promise, timeout])
+  }
+
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name || !form.category || !form.price || !form.description) {
@@ -215,10 +222,7 @@ const [adminSuccess, setAdminSuccess] = useState('')
     }
     try {
       console.log('Tentando salvar produto:', newPiece)
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Tempo esgotado ao salvar produto')), 10000)
-      )
-      await Promise.race([persistProduct(newPiece, !editing), timeout])
+      await withTimeout(persistProduct(newPiece, !editing), 10000)
       console.log('Produto salvo com sucesso!')
       setAdminSuccess('Produto salvo com sucesso!')
       setAdminError('')
@@ -243,7 +247,7 @@ const [adminSuccess, setAdminSuccess] = useState('')
     if (window.confirm('Tem certeza que deseja remover este produto?')) {
       try {
         console.log('Tentando remover produto ID:', id)
-        await removeProduct(id)
+        await withTimeout(removeProduct(id), 10000)
         console.log('Produto removido com sucesso!')
         setAdminSuccess('Produto removido com sucesso!')
         setAdminError('')
